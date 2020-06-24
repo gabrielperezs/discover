@@ -115,7 +115,6 @@ func (r *Resource) isNodeHealthy(orgurl string) bool {
 		log.Printf("Discover: error health check url: %s - %s", orgurl, err.Error())
 		return false
 	}
-	req.Close = true
 
 	_, p, _ := net.SplitHostPort(req.Host)
 	if p == "" {

@@ -1,12 +1,13 @@
 package pluginK8S
 
 import (
+	"context"
 	"errors"
 	"log"
 	"time"
 
 	"github.com/tevino/abool"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -54,7 +55,12 @@ func (l *PluginK8S) Reload(c Config) (err error) {
 		return err
 	}
 
-	l.clientset, err = kubernetes.NewForConfig(l.config)
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	l.clientset, err = kubernetes.NewForConfig(config)
 	if err != nil {
 		return err
 	}
@@ -106,7 +112,7 @@ func (l *PluginK8S) once() ([]string, error) {
 		return nil, ErrInvalidLogin
 	}
 
-	pods, err := l.clientset.CoreV1().Pods(l.namespace).List(v1.ListOptions{
+	pods, err := l.clientset.CoreV1().Pods(l.namespace).List(context.Background(), metav1.ListOptions{
 		Watch:          false,
 		TimeoutSeconds: &getPodsTimeout,
 	})
@@ -119,7 +125,7 @@ func (l *PluginK8S) once() ([]string, error) {
 		listIP = append(listIP, pod.Status.PodIP+":"+l.cfg.Port)
 	}
 
-	return listIP, nil
+	return nil, nil
 }
 
 func (l *PluginK8S) get() {
@@ -127,8 +133,8 @@ func (l *PluginK8S) get() {
 		return
 	}
 
-	events := l.clientset.EventsV1beta1().Events(l.namespace)
-	w, _ := events.Watch(v1.ListOptions{
+	events := l.clientset.CoreV1().Events(l.namespace)
+	w, _ := events.Watch(context.Background(), metav1.ListOptions{
 		Watch:          true,
 		TimeoutSeconds: &getPodsTimeout,
 	})
